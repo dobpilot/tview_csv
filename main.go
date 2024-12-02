@@ -57,7 +57,8 @@ func processFile(filePath string, wg *sync.WaitGroup, results chan map[string]tl
 	}
 	defer file.Close() // Закрываем файл в конце функции
 
-	scanner := bufio.NewScanner(file) // Создаем сканер для чтения файла построчно
+	//scanner := bufio.NewScanner(file) // Создаем сканер для чтения файла построчно
+	reader := bufio.NewReader(file)
 
 	linedata := &tline{
 		keys:  []string{},
@@ -66,17 +67,35 @@ func processFile(filePath string, wg *sync.WaitGroup, results chan map[string]tl
 
 	lines = make(map[string]tline)
 
-	for scanner.Scan() {
+	//for scanner.Scan() {
+	for {
+		data, _, err := reader.ReadLine()
+		//data, err := reader.ReadSlice('\n')
+		//data, err := reader.ReadString('\n')
 
+		if err != nil {
+			break
+		}
 		var intVal int
 
 		if isMultiLine {
-			line = line + "\n" + scanner.Text()
+			//line = line + "\n" + scanner.Text()
+			//line = line + "\n" + string(data)
+			line = fmt.Sprintf("%s\n%s", line, data)
 		} else {
-			line = scanner.Text()
+			line = string(data)
+			//line = scanner.Text()
 			line = strings.Replace(line, "\ufeff", "", 1)
 		}
 
+		countOfTerm := strings.Count(line, "'")
+
+		if countOfTerm > 0 && countOfTerm%2 > 0 {
+			isMultiLine = true
+			continue
+		}
+
+		//fmt.Print(line)
 		// Используем форматирование из format.go
 		//formatter := &formatter1C{}
 		formatter := new(formatter1C)
