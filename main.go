@@ -270,9 +270,10 @@ func main() {
 
 			if _, exists := allResults[key]; exists {
 				currentLine := allResults[key]
-				currentLine.count = currentLine.count + value.count
+				currentLine.count += value.count
 				currentLine.max = int(math.Max(float64(value.max), float64(currentLine.max)))
 				currentLine.summ += value.summ
+				currentLine.avg = currentLine.summ / currentLine.count
 				// Обновляем значение в мапе
 				allResults[key] = currentLine
 			} else {
