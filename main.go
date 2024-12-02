@@ -132,6 +132,7 @@ func processFile(filePath string, wg *sync.WaitGroup, results chan map[string]tl
 			currentLine.count++
 			currentLine.max = int(math.Max(float64(intVal), float64(currentLine.max)))
 			currentLine.summ += intVal
+			currentLine.avg = currentLine.summ / currentLine.count
 			// Обновляем значение в мапе
 			lines[key] = currentLine
 		} else {
@@ -141,6 +142,7 @@ func processFile(filePath string, wg *sync.WaitGroup, results chan map[string]tl
 				count: 1,
 				max:   intVal,
 				summ:  intVal,
+				avg:   intVal,
 			}
 		}
 
@@ -194,7 +196,7 @@ func exportJSON(w io.Writer, results map[string]tline) {
 
 func exportCSV(w io.Writer, results map[string]tline) {
 
-	fmt.Fprintf(w, "Count,Summ,Max") // Записываем заголовки
+	fmt.Fprintf(w, "Count,Summ,Max,Avg") // Записываем заголовки
 
 	if len(groupField) > 0 {
 		for _, field := range groupField {
@@ -204,7 +206,7 @@ func exportCSV(w io.Writer, results map[string]tline) {
 	fmt.Fprintln(w)
 
 	for _, value := range results {
-		fmt.Fprintf(w, "%d,%d,%d", value.count, value.summ, value.max)
+		fmt.Fprintf(w, "%d,%d,%d,%d", value.count, value.summ, value.max, value.avg)
 
 		if len(groupField) > 0 {
 			for key, _ := range groupField {
@@ -221,7 +223,7 @@ func exportCSV(w io.Writer, results map[string]tline) {
 }
 
 func main() {
-	kingpin.Version("0.0.1")
+	kingpin.Version("0.0.2")
 	kingpin.Parse()
 
 	if profile {

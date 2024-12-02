@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"strconv"
 	"strings"
 	"testing"
@@ -30,7 +31,7 @@ func TestExportJSON(t *testing.T) {
 	}
 
 	for i, item := range actual {
-		//fmt.Println("key" + strconv.Itoa(i+1))
+		fmt.Println("key" + strconv.Itoa(i+1))
 		etalon := results["key"+strconv.Itoa(i+1)]
 
 		if item["Count"] != float64(etalon.count) {
@@ -42,6 +43,15 @@ func TestExportJSON(t *testing.T) {
 		if item["Max"] != float64(etalon.max) {
 			t.Errorf("Ожидалось: %d, получено: %v", etalon.max, item["Max"])
 		}
+
+		if item["Avg"] != float64(etalon.avg) {
+			t.Errorf("Ожидалось: %d, получено: %v", etalon.avg, item["Avg"])
+		}
+
+		if item["event"] != etalon.keys[0] {
+			t.Errorf("Ожидалось: %s, получено: %s", etalon.keys[0], item["event"])
+		}
+
 	}
 }
 
