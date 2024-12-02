@@ -15,6 +15,9 @@ import (
 	"strings"
 	"sync"
 
+	"net/http"
+	_ "net/http/pprof"
+
 	"github.com/segmentio/fasthash/fnv1a"
 	"gopkg.in/alecthomas/kingpin.v2"
 )
@@ -28,6 +31,7 @@ type tline struct {
 var (
 	aggr, group, format string
 	files, groupField   []string
+	profile             bool
 )
 
 func processFile(filePath string, wg *sync.WaitGroup, results chan map[string]tline) {
@@ -74,8 +78,8 @@ func processFile(filePath string, wg *sync.WaitGroup, results chan map[string]tl
 		}
 
 		// Используем форматирование из format.go
-		formatter := &formatter1C{}
-		//formatter := new(formatter1C)
+		//formatter := &formatter1C{}
+		formatter := new(formatter1C)
 
 		parsedData, err := formatter.Format(line)
 
@@ -135,6 +139,7 @@ func init() {
 	kingpin.Flag("group", "Имена свойств для по которым нужно группировать").Short('g').Default("event").StringVar(&group)
 	kingpin.Flag("aggregate", "Имя свойства для агрегации").Short('a').Default("duration").StringVar(&aggr)
 	kingpin.Flag("format", "Формат вывода: csv или json").Short('o').Default("csv").StringVar(&format)
+	kingpin.Flag("profile", "Включить профилирование").Short('p').Default("0").BoolVar(&profile)
 
 	kingpin.Arg("files", "Файлы тех журнала *.log").Required().StringsVar(&files)
 
@@ -199,6 +204,12 @@ func exportCSV(w io.Writer, results map[string]tline) {
 func main() {
 	kingpin.Version("0.0.1")
 	kingpin.Parse()
+
+	if profile {
+		go func() {
+			log.Println(http.ListenAndServe(":8080", nil))
+		}()
+	}
 
 	var filesTJ []string
 
