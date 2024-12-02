@@ -162,6 +162,7 @@ func (f *formatter1C) Format(str string) (map[string]string, error) {
 					}
 
 					var index = 0
+
 					for {
 						if index >= len(str) {
 							return nil, ParseError{code: 0, what: "Not finished"} //еще не распарсили до конца
