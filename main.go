@@ -39,11 +39,10 @@ func processFile(filePath string, wg *sync.WaitGroup, results chan map[string]tl
 	defer wg.Done()
 
 	var isMultiLine bool
-	var line string
+	var line strings.Builder
 	var lines map[string]tline
 
 	isMultiLine = false
-	line = ""
 
 	//fmt.Printf("FilePath: %s\n", filePath)
 
@@ -67,43 +66,40 @@ func processFile(filePath string, wg *sync.WaitGroup, results chan map[string]tl
 
 	lines = make(map[string]tline)
 
-	//for scanner.Scan() {
+	var intVal int
+
 	for {
 		data, _, err := reader.ReadLine()
-		//data, err := reader.ReadSlice('\n')
-		//data, err := reader.ReadString('\n')
 
 		if err != nil {
 			break
 		}
-		var intVal int
 
 		if isMultiLine {
-			//line = line + "\n" + scanner.Text()
-			//line = line + "\n" + string(data)
-			line = fmt.Sprintf("%s\n%s", line, data)
+			line.Write(data)
+			//line = fmt.Sprintf("%s\n%s", line, data)
 		} else {
-			line = string(data)
-			//line = scanner.Text()
-			line = strings.Replace(line, "\ufeff", "", 1)
+			line.Reset()
+
+			buf := strings.Replace(string(data), "\ufeff", "", 1)
+
+			line.WriteString(buf)
 		}
 
-		countOfTerm := strings.Count(line, "'")
+		countOfTerm := strings.Count(line.String(), "'")
 
 		if countOfTerm > 0 && countOfTerm%2 > 0 {
 			isMultiLine = true
 			continue
 		}
 
-		//fmt.Print(line)
-		// Используем форматирование из format.go
-		//formatter := &formatter1C{}
-		formatter := new(formatter1C)
+		formatter := &formatter1C{}
+		//formatter := new(formatter1C)
 
-		parsedData, err := formatter.Format(line)
+		parsedData, err := formatter.Format(line.String())
 
+		// TODO: Fixme
 		if err != nil {
-			isMultiLine = true
 			continue
 		}
 
@@ -116,7 +112,9 @@ func processFile(filePath string, wg *sync.WaitGroup, results chan map[string]tl
 				linedata.keys = append(linedata.keys, parsedData[field])
 			}
 		} else {
-			linedata.keys = append(linedata.keys, line)
+			for k := range parsedData {
+				linedata.keys = append(linedata.keys, parsedData[k])
+			}
 		}
 
 		if aggr != "" {
