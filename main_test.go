@@ -10,10 +10,10 @@ import (
 )
 
 func TestExportJSON(t *testing.T) {
-	results := map[string]tline{
-		"key1": {count: 1, summ: 10, max: 10, avg: 10, keys: []string{"DBMSSQL"}},
-		"key2": {count: 2, summ: 20, max: 15, avg: 10, keys: []string{"DBMSSQL", "SELECT 1"}},
-		"key3": {count: 2, summ: 20, max: 15, avg: 10, keys: []string{"DBMSSQL"}},
+	results := []tline{
+		{count: 1, summ: 10, max: 10, min: 10, avg: 10, keys: []string{"DBMSSQL"}},
+		{count: 2, summ: 20, max: 15, min: 10, avg: 10, keys: []string{"DBMSSQL", "SELECT 1"}},
+		{count: 2, summ: 20, max: 15, min: 10, avg: 10, keys: []string{"DBMSSQL"}},
 	}
 
 	group = "event"
@@ -32,7 +32,7 @@ func TestExportJSON(t *testing.T) {
 
 	for i, item := range actual {
 		fmt.Println("key" + strconv.Itoa(i+1))
-		etalon := results["key"+strconv.Itoa(i+1)]
+		etalon := results[i]
 
 		if item["Count"] != float64(etalon.count) {
 			t.Errorf("Ожидалось: %d, получено: %v", etalon.count, item["Count"])
@@ -56,9 +56,9 @@ func TestExportJSON(t *testing.T) {
 }
 
 func TestExportCSV(t *testing.T) {
-	results := map[string]tline{
-		"key1": {count: 1, summ: 10, max: 10, keys: []string{"value1"}},
-		"key2": {count: 2, summ: 20, max: 15, keys: []string{"value2"}},
+	results := []tline{
+		{count: 1, summ: 10, max: 10, min: 10, avg: 10, keys: []string{"value1"}},
+		{count: 2, summ: 20, max: 15, min: 10, avg: 10, keys: []string{"value2"}},
 	}
 
 	group = "event"
@@ -67,7 +67,7 @@ func TestExportCSV(t *testing.T) {
 	var buf bytes.Buffer
 	exportCSV(&buf, results)
 
-	expected := "Count,Summ,Max\n1,10,10,value1\n2,20,15,value2\n"
+	expected := "Count,Summ,Max,Min,Avg\n1,10,10,10,10,value1\n2,20,15,10,10,value2\n"
 	if buf.String() != expected {
 		t.Errorf("Ожидалось: %s, получено: %s", expected, buf.String())
 	}
