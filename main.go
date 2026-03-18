@@ -30,6 +30,7 @@ type tline struct {
 var (
 	aggr, group, format string
 	files, groupField   []string
+	filterStrings       []string
 	profile             bool
 )
 
@@ -47,7 +48,7 @@ func Max(a, b uint64) uint64 {
 	return b
 }
 
-func processFile(filePath string, wg *sync.WaitGroup, results chan map[uint64]tline) {
+func processFile(filePath string, wg *sync.WaitGroup, results chan map[uint64]tline, filter *Filter) {
 
 	defer wg.Done()
 
@@ -89,6 +90,11 @@ func processFile(filePath string, wg *sync.WaitGroup, results chan map[uint64]tl
 			// TODO: Fixme
 			if err != nil {
 				continue
+			}
+
+			// Применение фильтра
+			if !filter.Apply(parsedData) {
+				continue // Пропускаем запись, не соответствующую фильтру
 			}
 
 			linedata := tline{ // Используем значение, а не указатель
@@ -192,6 +198,7 @@ func init() {
 	kingpin.Flag("group", "Имена свойств для по которым нужно группировать").Short('g').Default("event").StringVar(&group)
 	kingpin.Flag("aggregate", "Имя свойства для агрегации").Short('a').Default("duration").StringVar(&aggr)
 	kingpin.Flag("format", "Формат вывода: csv или json").Short('o').Default("csv").StringVar(&format)
+	kingpin.Flag("filter", "Фильтр по ключу и значению key=value (key=\"value\") (можно указывать несколько)").Short('f').StringsVar(&filterStrings)
 	kingpin.Flag("profile", "Включить профилирование").Short('p').Default("0").BoolVar(&profile)
 	kingpin.Arg("files", "Файлы тех журнала *.log").Required().StringsVar(&files)
 	runtime.SetMutexProfileFraction(5)
@@ -246,7 +253,7 @@ func exportCSV(w io.Writer, results []tline) {
 
 func main() {
 
-	kingpin.Version("0.0.3")
+	kingpin.Version("0.0.4")
 	kingpin.Parse()
 
 	if profile {
@@ -272,6 +279,17 @@ func main() {
 
 	groupField = strings.Split(group, ",")
 
+	// Парсинг фильтров
+	filter := &Filter{conditions: []FilterCondition{}}
+	for _, filterStr := range filterStrings {
+		f, err := ParseFilter(filterStr)
+		if err != nil {
+			log.Printf("Ошибка парсинга фильтра '%s': %v\n", filterStr, err)
+			continue
+		}
+		filter.conditions = append(filter.conditions, f.conditions...)
+	}
+
 	results := make(chan map[uint64]tline, len(filesTJ))
 
 	var wg sync.WaitGroup // Для ожидания processFile goroutines
@@ -287,7 +305,7 @@ func main() {
 
 	for _, filePath := range filesTJ {
 		wg.Add(1)
-		go processFile(filePath, &wg, results)
+		go processFile(filePath, &wg, results, filter)
 	}
 
 	wg.Wait()      // Ждем завершения всех processFile goroutines
